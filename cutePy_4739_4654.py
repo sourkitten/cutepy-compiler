@@ -154,7 +154,7 @@ class Lex:
         
         # if code is an error, process it
         if (state < 0):
-            print("ERROR: " + errors[state*(-1)] + " at line " + str(self.currentLine) + " !!")
+            print("ERROR: " + errors[state*(-1)-1] + " at line " + str(self.currentLine) + " !!")
             exit(-1)
         
         return Token(string, lexicUnits[state - 100], self.currentLine)
