@@ -1,3 +1,5 @@
+# EVANGELOS    BALLOS   4739 cse94739
+# KONSTANTINOS GKIOULIS 4654 cse94654
 import sys
 
 #####  LEX  #####
@@ -13,21 +15,23 @@ S_EOC   = 5   ;   F_ASGN  = 105   ;   E_BDHSH = -6
 S_LST   = 6   ;   F_RELOP = 106   ;   E_ILDOL = -7
 S_GRT   = 7   ;   F_ADDOP = 107   ;   E_BDDIV = -8  
 S_EQUAL = 8   ;   F_MULOP = 108   ;   E_BDASN = -9
-S_DIFF  = 9
-S_DIV   = 10
+S_DEQL  = 9   ;                       E_TEQL  = -10
+S_DIFF  = 10
+S_DIV   = 11
 
 # state automation   empty   ,  char/_  ,  nums    ,  + or -  ,  *       ,  /       ,  <       ,  >       ,  !       ,  =       ,  :/,/;   ,  () or [],  {}      ,  #       ,  $       ,  EOF
 stateAutomation = [[ S_START ,  S_IDK   ,  S_DIG   ,  F_ADDOP ,  F_MULOP ,  S_DIV   ,  S_LST   ,  S_GRT   ,  S_DIFF  ,  S_EQUAL ,  F_DELIM ,  F_GROUP ,  E_ILGBR ,  S_HASH  ,  E_ILDOL ,  F_EOF   ], # 0  -  Start
                    [ F_NUM   ,  E_NAV   ,  S_DIG   ,  F_NUM   ,  F_NUM   ,  F_NUM   ,  F_NUM   ,  F_NUM   ,  F_NUM   ,  F_NUM   ,  F_NUM   ,  F_NUM   ,  E_ILGBR ,  F_NUM   ,  F_NUM   ,  F_NUM   ], # 1  -  Dig
                    [ F_IDK   ,  S_IDK   ,  S_IDK   ,  F_IDK   ,  F_IDK   ,  F_IDK   ,  F_IDK   ,  F_IDK   ,  F_IDK   ,  F_IDK   ,  F_IDK   ,  F_IDK   ,  E_ILGBR ,  F_IDK   ,  F_IDK   ,  F_IDK   ], # 2  -  Idk
                    [ E_BDHSH ,  S_IDK   ,  E_BDHSH ,  E_BDHSH ,  E_BDHSH ,  E_BDHSH ,  E_BDHSH ,  E_BDHSH ,  E_BDHSH ,  E_BDHSH ,  E_BDHSH ,  E_BDHSH ,  F_GROUP ,  E_BDHSH ,  S_REM   ,  E_BDHSH ], # 3  -  Hashtag
-                   [ S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_EOC   ,  E_EOF   ], # 4  -  Remove
-                   [ S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_START ,  S_EOC   ,  E_EOF   ], # 5  -  Exit Comment
+                   [ S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_EOC   ,  S_REM   ,  E_EOF   ], # 4  -  Remove
+                   [ S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_REM   ,  S_EOC   ,  S_START ,  E_EOF   ], # 5  -  Exit Comment
                    [ F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  S_LST   ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ], # 6  -  Smaller than
                    [ F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  S_GRT   ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ], # 7  -  Larger than
-                   [ F_ASGN  ,  F_ASGN  ,  F_ASGN  ,  E_BDASN ,  E_BDASN ,  E_BDASN ,  E_BDASN ,  E_BDASN ,  E_BDASN ,  S_EQUAL ,  F_ASGN  ,  F_ASGN  ,  F_ASGN  ,  F_ASGN  ,  F_ASGN  ,  F_ASGN  ], # 8  -  Equals
-                   [ E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  F_RELOP ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ], # 9  -  Different than
-                   [ E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  F_MULOP ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ]  # 10 -  Divide
+                   [ F_ASGN  ,  F_ASGN  ,  F_ASGN  ,  E_BDASN ,  E_BDASN ,  E_BDASN ,  E_BDASN ,  E_BDASN ,  E_BDASN ,  S_DEQL  ,  F_ASGN  ,  F_ASGN  ,  F_ASGN  ,  F_ASGN  ,  F_ASGN  ,  F_ASGN  ], # 8  -  Equals
+                   [ F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  E_TEQL  ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ,  F_RELOP ], # 9  -  Double equals
+                   [ E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  F_RELOP ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ,  E_IEXCL ], # 10 -  Different than
+                   [ E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  F_MULOP ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ,  E_BDDIV ]  # 11 -  Divide
                   ]
 
 # lexic unit strings
@@ -51,7 +55,8 @@ errors = ["Illegal EOF",
           "Hashtags need to be followed by $ or brackets",
           "Illegal $",
           "/ can only be followed by another /",
-          "Bad assign"
+          "Bad assign",
+          "Triple equals is illegal"
           ]
 
 
@@ -68,7 +73,7 @@ class Token:
 class Lex:
     def __init__(self, filename):
         self.file = open(filename, 'r') # Open file
-        self.currentLine = 0
+        self.currentLine = 1
         self.token = None
         self.buffer = ' ' # this can be used to pass the last character read
                           # from the previous token to the next, in case it's needed
@@ -77,7 +82,7 @@ class Lex:
     def charcode(self, char):
         if   (char == ' ' or char == '\n' or char == '\t'): # whitespace
             return 0
-        elif (char >= 'A' and char <= 'z' and char not in ['[','/',']','^','`']): # a to Z and _
+        elif ((char >= 'A' and char <= 'z' and char not in ['[','/',']','^','`']) or char in ['\"',"\'"]): # a to Z and _
             return 1
         elif (char >= '0' and char <= '9'): # 0 to 9
             return 2
@@ -150,7 +155,7 @@ class Lex:
         # if code is an error, process it
         if (state < 0):
             print("ERROR: " + errors[state*(-1)] + " at line " + str(self.currentLine) + " !!")
-            return Token(string, "error", self.currentLine)
+            exit(-1)
         
         return Token(string, lexicUnits[state - 100], self.currentLine)
 
@@ -170,25 +175,27 @@ def testLex():
             lex.file.close
             break
 
-    print("recognized string  |  family  |  line number")
+    out = "recognized string      |  family       |  line number\n"
     for i in range(0, len(tokens)):
         tk = tokens[i]
-        print("\'" + tk.recognized_string + "\'  |  " + tk.family + "  |  " + str(tk.line_number))
+        out += "\'" + tk.recognized_string + "\'" + ' '*(20-len(tk.recognized_string)) + " |  " + tk.family + ' '*(12-len(tk.family)) + " |  " + str(tk.line_number) + "\n"
+    return out
 
-    
-testLex()
+
+out = open("lex.out", 'w')
+out.write(testLex())
+out.close()
 
 
 #####  SYNTAX  #####
 
 class Parser:
-# properties : recognized \ _string , family , line_number
+
     def __init__(self):
         self.lexical_analyzer = Lex(sys.argv[1])
 
     def syntax_analyzer(self):
-        global token
-        token = self.getToken()
+        self.token = self.getToken()
         self.startRule()
         print("Compiled successfully")
     
@@ -204,485 +211,431 @@ class Parser:
         self.call_main_part()
     
     def def_main_part(self):
-        global token
-        token = self.getToken()
-        self.def_main_function(token)
-        while (token.recognized_string == 'def'):
+        self.def_main_function()
+        while (self.token.recognized_string == 'def'):
             self.def_main_function()
     
-    def def_main_function(self, tokenin):
+    def def_main_function(self):
         returns = True
-        global token
-        token = tokenin
-        if (token.recognized_string == "def"):
-            token = self.getToken()
-            if (token.family == "idk"):
-                token = self.getToken()
-                if (token.recognized_string == "("):
-                    token = self.getToken()
-                    if (token.recognized_string == ")"):
-                        token = self.getToken()
-                        if (token.recognized_string == ":"):
-                            token = self.getToken()
-                            if (token.recognized_string == "#{"):
-                                token = self.getToken()
+        if (self.token.recognized_string == "def"):
+            self.token = self.getToken()
+            if (self.token.family == "idk"):
+                self.token = self.getToken()
+                if (self.token.recognized_string == "("):
+                    self.token = self.getToken()
+                    if (self.token.recognized_string == ")"):
+                        self.token = self.getToken()
+                        if (self.token.recognized_string == ":"):
+                            self.token = self.getToken()
+                            if (self.token.recognized_string == "#{"):
+                                self.token = self.getToken()
                                 self.declarations()
                                 while (self.def_function()):
                                     pass
                                 else:
                                     returns = False
                                 self.statements()
-                                if (token.recognized_string == "#}"):
-                                    token = self.getToken()
+                                if (self.token.recognized_string == "#}"):
+                                    self.token = self.getToken()
                                 else:
-                                    self.error("#} expected, got " + token.recognized_string + " instead", token.line_number)
+                                    self.error("#} expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                             else:
-                                self.error("#{ expected, got " + token.recognized_string + " instead", token.line_number)
+                                self.error("#{ expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                         else:
-                            self.error(": expected, got " + token.recognized_string + " instead", token.line_number)
+                            self.error(": expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                     else:
-                        self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
+                        self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                 else:
-                    self.error("( expected, got " + token.recognized_string + " instead", token.line_number)
+                    self.error("( expected, got " + self.token.recognized_string + " instead", self.token.line_number)
             else:
-                self.error("Identifier expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("Identifier expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
             returns = False
         return returns
     
     def def_function(self):
         returns = True
-        global token
-        token = self.getToken()
-        if (token.recognized_string == "def"):
-            token = self.getToken()
-            if (token.family == "idk"):
-                token = self.getToken()
-                if (token.recognized_string == "("):
-                    token = self.getToken()
+        if (self.token.recognized_string == "def"):
+            self.token = self.getToken()
+            if (self.token.family == "idk"):
+                self.token = self.getToken()
+                if (self.token.recognized_string == "("):
+                    self.token = self.getToken()
                     self.id_list()
-                    if (token.recognized_string == ")"):
-                        token = self.getToken()
-                        if (token.recognized_string == ":"):
-                            token = self.getToken()
-                            if (token.recognized_string == "#{"):
-                                token = self.getToken()
+                    if (self.token.recognized_string == ")"):
+                        self.token = self.getToken()
+                        if (self.token.recognized_string == ":"):
+                            self.token = self.getToken()
+                            if (self.token.recognized_string == "#{"):
+                                self.token = self.getToken()
                                 self.declarations()
                                 while (self.def_function()):
                                     pass
                                 else:
                                     returns = False
                                 self.statements()
-                                if (token.recognized_string == "#}"):
-                                    token = self.getToken()
+                                if (self.token.recognized_string == "#}"):
+                                    self.token = self.getToken()
                                 else:
-                                    self.error("#} expected, got " + token.recognized_string + " instead", token.line_number)
+                                    self.error("#} expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                             else:
-                                self.error("#{ expected, got " + token.recognized_string + " instead", token.line_number)
+                                self.error("#{ expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                         else:
-                            self.error(": expected, got " + token.recognized_string + " instead", token.line_number)
+                            self.error(": expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                     else:
-                        self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
+                        self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                 else:
-                    self.error("( expected, got " + token.recognized_string + " instead", token.line_number)
+                    self.error("( expected, got " + self.token.recognized_string + " instead", self.token.line_number)
             else:
-                self.error("Identifier expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("Identifier expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
             returns = False
         return returns
     
     def declarations(self):
-        global token
-        token = self.getToken()
-        while (token.recognized_string == "#declare"):
-            self.declaration_line(token)
+        while (self.token.recognized_string == "#declare"):
+            self.declaration_line()
     
-    def declaration_line(self, tokenin):
-        global token
-        token = tokenin
-        if (token.recognized_string == "#declare"):
-            token = self.getToken()
+    def declaration_line(self):
+        if (self.token.recognized_string == "#declare"):
+            self.token = self.getToken()
             self.id_list()
         else:
-            self.error("'#declare' expected, got " + token.recognized_string + " instead", token.line_number)
+            self.error("'#declare' expected, got " + self.token.recognized_string + " instead", self.token.line_number)
     
-    def statement(self, tokenin):
-        if (tokenin.recognized_string in ["while", "if"]):
-            self.structured_statement(tokenin)
+    def statement(self):
+        if (self.token.recognized_string in ["while", "if"]):
+            self.structured_statement()
         else:
-            self.simple_statement(tokenin)
+            self.simple_statement()
     
     def statements(self):
-        global token
-        token = self.getToken()
-        while (token.recognized_string in ["return", "print", "while", "if"] or token.family == "idk"):
-            self.statement(token)
+        while (self.token.recognized_string in ["return", "print", "while", "if"] or self.token.family == "idk"):
+            self.statement()
 
-    def simple_statement(self, tokenin):
-        global token
-        token = tokenin
-        if (token.recognized_string == "print"):
-            self.print_stat(token)
-        elif (token.recognized_string == "return"):
-            self.return_stat(token)
+    def simple_statement(self):
+        if (self.token.recognized_string == "print"):
+            self.print_stat()
+        elif (self.token.recognized_string == "return"):
+            self.return_stat()
         else:
-            self.assignment_stat(token)
+            self.assignment_stat()
     
-    def structured_statement(self, tokenin):
-        global token
-        token = tokenin
-        if (token == "if"):
-            self.if_stat(token)
+    def structured_statement(self):
+        if (self.token.recognized_string == "if"):
+            self.if_stat()
         else:
-            self.while_stat(token)
+            self.while_stat()
     
-    def assignment_stat(self, tokenin):
-        global token
-        token = tokenin
-        if (token.family == "idk"):
-            token = self.getToken()
-            if (token.recognized_string == "="):
-                token = self.getToken()
-                if (token.recognized_string == "int"):
-                    token = self.getToken()
-                    if (token.recognized_string == "("):
-                        token = self.getToken()
-                        if (token.recognized_string == "input"):
-                            token = self.getToken()
-                            if (token.recognized_string == "("):
-                                token = self.getToken()
-                                if (token.recognized_string == ")"):
-                                    token = self.getToken()
-                                    if (token.recognized_string == ")"):
-                                        token = self.getToken()
-                                        if (token.recognized_string == ";"):
-                                            token = self.getToken()
+    def assignment_stat(self):
+        if (self.token.family == "idk"):
+            self.token = self.getToken()
+            if (self.token.recognized_string == "="):
+                self.token = self.getToken()
+                if (self.token.recognized_string == "int"):
+                    self.token = self.getToken()
+                    if (self.token.recognized_string == "("):
+                        self.token = self.getToken()
+                        if (self.token.recognized_string == "input"):
+                            self.token = self.getToken()
+                            if (self.token.recognized_string == "("):
+                                self.token = self.getToken()
+                                if (self.token.recognized_string == ")"):
+                                    self.token = self.getToken()
+                                    if (self.token.recognized_string == ")"):
+                                        self.token = self.getToken()
+                                        if (self.token.recognized_string == ";"):
+                                            self.token = self.getToken()
                                         else:
-                                            self.error("; expected, got " + token.recognized_string + " instead", token.line_number)
+                                            self.error("; expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                                     else:
-                                        self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
+                                        self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                                 else:
-                                    self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
+                                    self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                             else:
-                                self.error("( expected, got " + token.recognized_string + " instead", token.line_number)
+                                self.error("( expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                         else:
-                            token = self.getToken()
-                            self.expression()
-                            if (token.recognized_string == ';'):
-                                token = self.getToken()
-                            else:
-                                self.error("; expected, got " + token.recognized_string + " instead", token.line_number)
+                            self.error("'input' expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                     else:
-                        self.error("( expected, got " + token.recognized_string + " instead", token.line_number)
+                        self.error("( expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                 else:
-                    self.error("'int' expected, got " + token.recognized_string + " instead", token.line_number)
+                    self.expression()
+                    if (self.token.recognized_string == ';'):
+                        self.token = self.getToken()
+                    else:
+                        self.error("; expected, got " + self.token.recognized_string + " instead", self.token.line_number)
             else:
-                self.error("= expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("= expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
-            self.error("Identifier expected, got " + token.recognized_string + " instead", token.line_number)
+            self.error("Identifier expected, got " + self.token.recognized_string + " instead", self.token.line_number)
 
-    def print_stat(self, tokenin):
-        global token
-        token = tokenin
-        if (token.recognized_string == "print"):
-            token = self.getToken()
-            if (token.recognized_string == "("):
-                token = self.getToken()
+    def print_stat(self):
+        if (self.token.recognized_string == "print"):
+            self.token = self.getToken()
+            if (self.token.recognized_string == "("):
+                self.token = self.getToken()
                 self.expression()
-                if (token.recognized_string == ")"):
-                    token = self.getToken()
-                    if (token.recognized_string == ";"):
-                        token = self.getToken()
+                if (self.token.recognized_string == ")"):
+                    self.token = self.getToken()
+                    if (self.token.recognized_string == ";"):
+                        self.token = self.getToken()
                     else:
-                        self.error("; expected, got " + token.recognized_string + " instead", token.line_number)
+                        self.error("; expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                 else:
-                    self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
+                    self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
             else:
-                self.error("( expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("( expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
-            self.error("print expected, got " + token.recognized_string + " instead", token.line_number)                
+            self.error("print expected, got " + self.token.recognized_string + " instead", self.token.line_number)                
 
-    def return_stat(self, tokenin):
-        global token
-        token = tokenin
-        if (token.recognized_string == "return"):
-            token = self.getToken()
-            if (token.recognized_string == "("):
-                token = self.getToken()
+    def return_stat(self):
+        if (self.token.recognized_string == "return"):
+            self.token = self.getToken()
+            if (self.token.recognized_string == "("):
+                self.token = self.getToken()
                 self.expression()
-                if (token.recognized_string == ")"):
-                    token = self.getToken()
-                    if (token.recognized_string == ";"):
-                        token = self.getToken()
+                if (self.token.recognized_string == ")"):
+                    self.token = self.getToken()
+                    if (self.token.recognized_string == ";"):
+                        self.token = self.getToken()
                     else:
-                        self.error("; expected, got " + token.recognized_string + " instead", token.line_number)
+                        self.error("; expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                 else:
-                    self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
+                    self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
             else:
-                self.error("( expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("( expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
-            self.error("return expected, got " + token.recognized_string + " instead", token.line_number)                
+            self.error("return expected, got " + self.token.recognized_string + " instead", self.token.line_number)                
     
-    def if_stat(self, tokenin):
-        global token
-        token = tokenin
-        if (token.recognized_string == "if"):
-            token = self.getToken()
-            if (token.recognized_string == "("):
-                token = self.getToken()
+    def if_stat(self):
+        if (self.token.recognized_string == "if"):
+            self.token = self.getToken()
+            if (self.token.recognized_string == "("):
+                self.token = self.getToken()
                 self.condition()
-                if (token.recognized_string == ")"):
-                    token = self.getToken()
-                    if (token.recognized_string == ":"):
-                        token = self.getToken()
-                        if (token.recognized_string == "#{"):
-                            token = self.getToken()
+                if (self.token.recognized_string == ")"):
+                    self.token = self.getToken()
+                    if (self.token.recognized_string == ":"):
+                        self.token = self.getToken()
+                        if (self.token.recognized_string == "#{"):
+                            self.token = self.getToken()
                             self.statements()
-                            if (token.recognized_string == "#}"):
-                                token = self.getToken()
-                                if (token.recognized_string == "else"):
-                                    token = self.getToken()
-                                    if (token.recognized_string == ":"):
-                                        token = self.getToken()
-                                        if (token.recognized_string == "#{"):
-                                            token = self.getToken()
+                            if (self.token.recognized_string == "#}"):
+                                self.token = self.getToken()
+                                if (self.token.recognized_string == "else"):
+                                    self.token = self.getToken()
+                                    if (self.token.recognized_string == ":"):
+                                        self.token = self.getToken()
+                                        if (self.token.recognized_string == "#{"):
+                                            self.token = self.getToken()
                                             self.statements()
-                                            if (token.recognized_string == "#}"):
-                                                token = self.getToken()
+                                            if (self.token.recognized_string == "#}"):
+                                                self.token = self.getToken()
                                             else:
-                                                self.error("#} expected, got " + token.recognized_string + " instead", token.line_number)
+                                                self.error("#} expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                                         else:
                                             self.statement()
                                     else:
-                                        self.error(": expected, got " + token.recognized_string + " instead", token.line_number)
+                                        self.error(": expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                             else:
-                                self.error("#} expected, got " + token.recognized_string + " instead", token.line_number)
+                                self.error("#} expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                         else:
                             self.statement()
-                            if (token.recognized_string == "else"):
-                                token = self.getToken()
-                                if (token.recognized_string == ":"):
-                                    token = self.getToken()
-                                    if (token.recognized_string == "#{"):
-                                        token = self.getToken()
+                            if (self.token.recognized_string == "else"):
+                                self.token = self.getToken()
+                                if (self.token.recognized_string == ":"):
+                                    self.token = self.getToken()
+                                    if (self.token.recognized_string == "#{"):
+                                        self.token = self.getToken()
                                         self.statements()
-                                        if (token.recognized_string == "#}"):
-                                            token = self.getToken()
+                                        if (self.token.recognized_string == "#}"):
+                                            self.token = self.getToken()
                                         else:
-                                            self.error("#} expected, got " + token.recognized_string + " instead", token.line_number)
+                                            self.error("#} expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                                     else:
                                         self.statement()
                                 else:
-                                    self.error(": expected, got " + token.recognized_string + " instead", token.line_number)
+                                    self.error(": expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                     else:
-                        self.error(": expected, got " + token.recognized_string + " instead", token.line_number)
+                        self.error(": expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                 else:
-                    self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
+                    self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
             else:
-                self.error("( expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("( expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
-            self.error("if expected, got " + token.recognized_string + " instead", token.line_number)
+            self.error("if expected, got " + self.token.recognized_string + " instead", self.token.line_number)
     
-    def while_stat(self, tokenin):
-        global token
-        token = tokenin #self.getToken()
-        if (token.recognized_string == "while"):
-            token = self.getToken()
-            if (token.recognized_string == "("):
-                token = self.getToken()
+    def while_stat(self):
+        if (self.token.recognized_string == "while"):
+            self.token = self.getToken()
+            if (self.token.recognized_string == "("):
+                self.token = self.getToken()
                 self.condition()
-                if (token.recognized_string == ")"):
-                    token = self.getToken()
-                    if (token.recognized_string == ":"):
-                        token = self.getToken()
-                        if (token.recognized_string == "#{"):
-                            token = self.getToken()
+                if (self.token.recognized_string == ")"):
+                    self.token = self.getToken()
+                    if (self.token.recognized_string == ":"):
+                        self.token = self.getToken()
+                        if (self.token.recognized_string == "#{"):
+                            self.token = self.getToken()
                             self.statements()
-                            if (token.recognized_string == "#}"):
-                                token = self.getToken()
+                            if (self.token.recognized_string == "#}"):
+                                self.token = self.getToken()
                             else:
-                                self.error("#} expected, got " + token.recognized_string + " instead", token.line_number)
+                                self.error("#} expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                         else:
                             self.statement()
                     else:
-                        self.error(": expected, got " + token.recognized_string + " instead", token.line_number)
+                        self.error(": expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                 else:
-                    self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
+                    self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
             else:
-                self.error("( expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("( expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
-            self.error("while expected, got " + token.recognized_string + " instead", token.line_number)
+            self.error("while expected, got " + self.token.recognized_string + " instead", self.token.line_number)
     
     def id_list(self):
-        global token
-        token = self.getToken()
-        if (token.family == "idk"):
-            token = self.getToken()
-            while (token.recognized_string == ","):
-                token = self.getToken()
-                if (token.family == "idk"):
-                    token = self.getToken()
+        if (self.token.family == "idk"):
+            self.token = self.getToken()
+            while (self.token.recognized_string == ","):
+                self.token = self.getToken()
+                if (self.token.family == "idk"):
+                    self.token = self.getToken()
                 else:
-                    self.error("Identifier expected, got " + token.recognized_string + " instead", token.line_number)
+                    self.error("Identifier expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
-            self.error("Identifier expected, got " + token.recognized_string + " instead", token.line_number)
+            self.error("Identifier expected, got " + self.token.recognized_string + " instead", self.token.line_number)
     
     def expression(self):
-        global token
         self.optional_sign()
         self.term()
-        while (token.family == "addOperator"):
-            token = self.getToken()
+        while (self.token.family == "addOperator"):
+            self.token = self.getToken()
             self.term()
     
     def term(self):
-        global token
         self.factor()
-        while (token.family == "mulOperator"):
-            self.getToken()
+        while (self.token.family == "mulOperator"):
+            self.token = self.getToken()
             self.factor()
     
     def factor(self):
-        global token
-        token = self.getToken()
-        if (token.family == 'number'):
-            token = self.getToken()
-        elif (token.recognized_string == '('):
-            token = self.getToken()
+        if (self.token.family == 'number'):
+            self.token = self.getToken()
+        elif (self.token.recognized_string == '('):
+            self.token = self.getToken()
             self.expression()
-            if (token.recognized_string == ')'):
-                token = self.getToken()
+            if (self.token.recognized_string == ')'):
+                self.token = self.getToken()
             else:
-                self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
-        elif (token.family == 'idk'):
-            token = self.getToken()
+                self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
+        elif (self.token.family == 'idk'):
+            self.token = self.getToken()
             self.idtail()
         else:
-            self.error("Integer, expression or identifier expected, got " + token.recognized_string + " instead", token.line_number)
+            self.error("Integer, expression or identifier expected, got " + self.token.recognized_string + " instead", self.token.line_number)
 
     def idtail(self):
-        global token
-        token = self.getToken()
-        if (token.recognized_string == '('):
-            token = self.getToken()
+        if (self.token.recognized_string == '('):
+            self.token = self.getToken()
             self.actual_par_list()
-            if (token.recognized_string == ')'):
-                token = self.getToken()
+            if (self.token.recognized_string == ')'):
+                self.token = self.getToken()
             else:
-                self.error(") expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error(") expected, got " + self.token.recognized_string + " instead", self.token.line_number)
 
     def actual_par_list(self):
-        global token
-        token = self.getToken()
         self.expression()
-        while (token.recognized_string == ','):
-            token = self.getToken()
+        while (self.token.recognized_string == ','):
+            self.token = self.getToken()
             self.expression()
     
     def optional_sign(self):
-        global token
-        token = self.getToken()
-        if (self.family == "addOperator"):
-            token = self.getToken()
+        if (self.token.family == "addOperator"):
+            self.token = self.getToken()
 
     
     def condition(self):
-        global token
-        token = self.getToken()
         self.bool_factor()
-        while (token.recognized_string == 'or'):
-            token = self.getToken()
+        while (self.token.recognized_string == 'or'):
+            self.token = self.getToken()
             self.bool_factor
     
     def bool_term(self):
-        global token
-        token = self.getToken()
+        self.token = self.getToken()
         self.bool_factor()
-        while (token.recognized_string == 'and'):
-            token = self.getToken()
+        while (self.token.recognized_string == 'and'):
+            self.token = self.getToken()
             self.bool_factor
     
     def bool_factor(self):
-        global token
-        token = self.getToken()
-        if (token.recognized_string == "not"):
-            token = self.getToken()
-            if (token.recognized_string == '['):
-                token = self.getToken()
+        if (self.token.recognized_string == "not"):
+            self.token = self.getToken()
+            if (self.token.recognized_string == '['):
+                self.token = self.getToken()
                 self.condition()
-                if (token.recognized_string == ']'):
-                    token = self.getToken()
+                if (self.token.recognized_string == ']'):
+                    self.token = self.getToken()
                 else:
-                    self.error("[ expected, got" + token.recognized_string + " instead", token.line_number)
+                    self.error("[ expected, got" + self.token.recognized_string + " instead", self.token.line_number)
             else:
-                self.error("] expected, got " + token.recognized_string + " instead", token.line_number)
-        elif (token.recognized_string == '['):
-            token = self.getToken()
+                self.error("] expected, got " + self.token.recognized_string + " instead", self.token.line_number)
+        elif (self.token.recognized_string == '['):
+            self.token = self.getToken()
             self.condition()
-            if (token.recognized_string == ']'):
-                token = self.getToken()
+            if (self.token.recognized_string == ']'):
+                self.token = self.getToken()
             else:
-                self.error("] expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("] expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
             self.expression()
-            if (token.family == 'relOperator'):
-                self.getToken()
+            if (self.token.family == 'relOperator'):
+                self.token = self.getToken()
+                self.expression()
             else:
-                self.error("relational operator expected, got " + token.recognized_string + " instead", token.line_number)
-            self.expression()
+                self.error("relational operator expected, got " + self.token.recognized_string + " instead", self.token.line_number)
     
     def call_main_part(self):
-        global token
-        token = self.getToken()
-        if (token.recognized_string == "if"):
-            token = self.getToken()
-            if (token.recognized_string == '__name__'):
-                token = self.getToken()
-                if (token.recognized_string == '=='):
-                    token = self.getToken()
-                    if (token.recognized_string == '__main__'):
-                        token = self.getToken()
-                        if (token.recognized_string == ':'):
-                            token = self.getToken()
-                            if (token.recognized_string == 'def'):
-                                token = self.getToken()
+        if (self.token.recognized_string == "if"):
+            self.token = self.getToken()
+            if (self.token.recognized_string == '__name__'):
+                self.token = self.getToken()
+                if (self.token.recognized_string == '=='):
+                    self.token = self.getToken()
+                    if (self.token.recognized_string in ['\"__main__\"', "\'__main__\'"]):
+                        self.token = self.getToken()
+                        if (self.token.recognized_string == ':'):
+                            self.token = self.getToken()
+                            while (self.token.recognized_string != ''):
                                 self.main_function_call()
-                                while (token.recognized_string == 'def'):
-                                    token = self.getToken()
-                                    self.main_function_call()
-                            else:
-                                self.error("At least one define needed", token.line_number)
                         else:
-                            self.error(": expected, got " + token.recognized_string + " instead", token.line_number)
+                            self.error(": expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                     else:
-                        self.error("__main__ expected, got " + token.recognized_string + " instead", token.line_number)
+                        self.error("__main__ expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                 else:
-                    self.error("== expected, got " + token.recognized_string + " instead", token.line_number)
+                    self.error("== expected, got " + self.token.recognized_string + " instead", self.token.line_number)
             else:
-                self.error("__name__ expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("__name__ expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
-            self.error("if expected, got " + token.recognized_string + " instead", token.line_number)
+            self.error("if expected, got " + self.token.recognized_string + " instead", self.token.line_number)
 
     
     def main_function_call(self):
-        global token
-        token = self.getToken()
-        if (token.family == "idk"):
-            token = self.getToken()
-            if (token.recognized_string == '('):
-                token = self.getToken()
-                if (token.recognized_string == ')'):
-                    token = self.getToken()
-                    if(token.recognized_string == ';'):
-                        token = self.getToken()
+        if (self.token.family == "idk"):
+            self.token = self.getToken()
+            if (self.token.recognized_string == '('):
+                self.token = self.getToken()
+                if (self.token.recognized_string == ')'):
+                    self.token = self.getToken()
+                    if(self.token.recognized_string == ';'):
+                        self.token = self.getToken()
                     else:
-                        self.error("Semicolon expected, got " + token.recognized_string + " instead", token.line_number)
+                        self.error("Semicolon expected, got " + self.token.recognized_string + " instead", self.token.line_number)
                 else:
-                    self.error("Parenthesis not closed", token.line_number)
+                    self.error("Parenthesis not closed", self.token.line_number)
             else:
-                self.error("Parenthesis expected, got " + token.recognized_string + " instead", token.line_number)
+                self.error("Parenthesis expected, got " + self.token.recognized_string + " instead", self.token.line_number)
         else:
-            self.error("Identifier expected, got " + token.recognized_string + " instead", token.line_number)
+            self.error("Identifier expected, got " + self.token.recognized_string + " instead", self.token.line_number)
 
 parser = Parser()
 parser.syntax_analyzer()
