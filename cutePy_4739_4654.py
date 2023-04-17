@@ -181,11 +181,13 @@ def testLex():
         out += "\'" + tk.recognized_string + "\'" + ' '*(20-len(tk.recognized_string)) + " |  " + tk.family + ' '*(12-len(tk.family)) + " |  " + str(tk.line_number) + "\n"
     return out
 
+# WILL BE EXECUTED - TEST THE LEX
 
 out = open("lex.out", 'w')
 out.write(testLex())
 out.close()
 
+#
 
 #####  SYNTAX  #####
 
@@ -193,14 +195,19 @@ class Parser:
 
     def __init__(self):
         self.lexical_analyzer = Lex(sys.argv[1])
+        self.tokens = []
 
     def syntax_analyzer(self):
         self.token = self.getToken()
         self.startRule()
         print("Compiled successfully")
     
+    def getTokens(self):
+        return self.tokens
+
     def getToken(self):
-        return self.lexical_analyzer.lex()
+        self.tokens.append(self.lexical_analyzer.lex())
+        return self.tokens[-1]
     
     def error(self, issue, line):
         print("ERROR: " + issue + " on line " + str(line))
@@ -637,5 +644,67 @@ class Parser:
         else:
             self.error("Identifier expected, got " + self.token.recognized_string + " instead", self.token.line_number)
 
+# WILL BE EXECUTED - TEST THE SYNTAXER
+
 parser = Parser()
 parser.syntax_analyzer()
+
+#
+
+##### INTERMEDIATE CODE #####
+class Quad:
+    labelCounter = -1
+    tempCounter = -1
+    quads = []
+
+    def __init__(self, label, operator, operand1, operand2, operand3):
+        self.labelCounter    = label
+        self.operator = operator
+        self.operand1 = operand1
+        self.operand2 = operand2
+        self.operand3 = operand3
+
+    @staticmethod
+    def genQuad(operator, operand1, operand2, operand3):
+        Quad.labelCounter += 1
+        Quad.quads.append(Quad(Quad.labelCounter, operator, operand1, operand2, operand3))
+    
+    @staticmethod
+    def nextQuad():
+        return Quad.labelCounter + 1
+    
+    @staticmethod
+    def newTemp():
+        Quad.tempCounter += 1
+        return "T@" + str(Quad.tempCounter)
+    
+    @staticmethod
+    def emptyList():
+        return []
+    
+    @staticmethod
+    def makeList(label):
+        return [label]
+    
+    @staticmethod
+    def mergeList(list1, list2):
+        return list1 + list2
+    
+    @staticmethod
+    def backpatch(list, label):
+        for element in list:
+            Quad.quads[element].operand3 = label
+        del list
+            
+
+
+
+
+class IntCode:
+
+    def __init__(self):
+        self.parser = Parser()
+        self.parser.syntax_analyzer()
+        self.tokens = self.parser.getTokens()
+
+    
