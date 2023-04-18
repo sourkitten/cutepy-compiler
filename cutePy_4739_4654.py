@@ -652,12 +652,23 @@ parser.syntax_analyzer()
 #
 
 ##### INTERMEDIATE CODE #####
+class Node:
+    def init(self, name, place=None):
+        self.name = name
+        self.place = place
+        self.true = None
+        self.false = None
+
 class Quad:
+    tokenCounter = -1
     labelCounter = -1
     tempCounter = -1
     quads = []
 
     def __init__(self, label, operator, operand1, operand2, operand3):
+        parser = Parser()
+        parser.syntax_analyzer()
+        self.tokens = parser.getTokens()
         self.labelCounter    = label
         self.operator = operator
         self.operand1 = operand1
@@ -695,16 +706,107 @@ class Quad:
         for element in list:
             Quad.quads[element].operand3 = label
         del list
-            
 
-
-
-
-class IntCode:
-
-    def __init__(self):
-        self.parser = Parser()
-        self.parser.syntax_analyzer()
-        self.tokens = self.parser.getTokens()
-
+    @staticmethod
+    def current_token():
+        return Quad.tokens[Quad.tokenCounter]
     
+    @staticmethod
+    def next_token():
+        Quad.tokenCounter += 1
+        return Quad.tokens[Quad.tokenCounter]
+
+    @staticmethod
+    def E(E: Node):
+        T1 = Node()
+        T2 = Node()
+        Quad.T(T1.place)
+        while (Quad.current_token() == "+"):
+            Quad.next_token()
+            Quad.T(T2.place)
+            w = Quad.newTemp()
+            Quad.genQuad("+", T1.place, T2.place, w)
+            T1.place = w
+        E.place = T1.place
+
+    @staticmethod
+    def T(T: Node):
+        F1 = Node()
+        F2 = Node()
+        Quad.F(F1.place)
+        while (Quad.current_token() == "*"):
+            Quad.next_token()
+            Quad.F(F2.place)
+            w = Quad.newTemp()
+            Quad.genQuad("*", F1.place, F2.place, w)
+            F1.place = w
+        T.place = F1.place
+
+    @staticmethod
+    def F(F: Node):
+        if (Quad.current_token() == '('):
+            Quad.next_token()
+            E1 = Quad.E()
+            Quad.next_token()
+            F.place = E1.place
+        else:
+            ID = Quad.current_token()
+            Quad.next_token()
+            F.place = ID
+
+    ###### TODO - VERIFY THIS ######
+    @staticmethod
+    def B(B: Node):
+        Q1 = Node()
+        Q2 = Node()
+        Quad.Q(Q1.place)
+        B.true  = Q1.true
+        B.false = Q1.false
+        while (Quad.current_token() == "or"):
+            Quad.next_token()
+            Quad.Q(Q2.place)
+            B.true  = Q2.true
+            B.false = Q2.false
+    
+    @staticmethod
+    def Q(Q: Node):
+        R1 = Node()
+        R2 = Node()
+        Quad.R(R1.place)
+        Q.true  = R1.true
+        Q.false = R1.false
+        while (Quad.current_token() == "and"):
+            Quad.next_token()
+            Quad.R(R2.place)
+            Quad.backpatch(Q.true, Quad.nextQuad())
+            Q.false = Quad.mergeList(Q.false, R2.false)
+            Q.true  = R2.true
+        Q.place = R1.place
+
+    @staticmethod
+    def R(R: Node):
+        if (Quad.current_token() == 'not'):
+            Quad.next_token()
+            if (Quad.current_token() == '['):
+                Quad.next_token()
+                B = Quad.B()
+                R.true = B.true
+                R.false = B.false
+        elif (Quad.current_token() == '['):
+            Quad.next_token()
+            B = Quad.B()
+            R.true = B.false
+            R.false = B.true
+        else:
+            E1 = Node()
+            E2 = Node()
+            Quad.next_token()
+            R.true = Quad.makeList(Quad.nextQuad())
+            E1 = Quad.E()
+            relop = Quad.current_token()
+            Quad.next_token()
+            E2 = Quad.E()
+            Quad.genQuad(relop, E1.place, E2.place, '_')
+            R.false = Quad.makeList(Quad.nextQuad())
+            Quad.genQuad('jump', '_', '_', '_')
+
