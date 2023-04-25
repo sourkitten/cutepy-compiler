@@ -664,6 +664,7 @@ class Quad:
     labelCounter = -1
     tempCounter = -1
     quads = []
+    functionStack = []
 
     def __init__(self, label, operator, operand1, operand2, operand3):
         parser = Parser()
@@ -712,6 +713,10 @@ class Quad:
         return Quad.tokens[Quad.tokenCounter]
     
     @staticmethod
+    def peek_token():
+        return Quad.tokens[Quad.tokenCounter + 1]
+    
+    @staticmethod
     def next_token():
         Quad.tokenCounter += 1
         return Quad.tokens[Quad.tokenCounter]
@@ -754,7 +759,6 @@ class Quad:
             Quad.next_token()
             F.place = ID
 
-    ###### TODO - VERIFY THIS ######
     @staticmethod
     def B(B: Node):
         Q1 = Node()
@@ -765,8 +769,9 @@ class Quad:
         while (Quad.current_token() == "or"):
             Quad.next_token()
             Quad.Q(Q2.place)
-            B.true  = Q2.true
-            B.false = Q2.false
+            Quad.backpatch(B.false, Quad.nextQuad())
+            B.true = Quad.mergeList(B.true, Q2.true)
+            B.false  = Q2.false
     
     @staticmethod
     def Q(Q: Node):
@@ -781,22 +786,21 @@ class Quad:
             Quad.backpatch(Q.true, Quad.nextQuad())
             Q.false = Quad.mergeList(Q.false, R2.false)
             Q.true  = R2.true
-        Q.place = R1.place
 
     @staticmethod
     def R(R: Node):
-        if (Quad.current_token() == 'not'):
+        if (Quad.current_token() == 'not'): # reversed
             Quad.next_token()
             if (Quad.current_token() == '['):
                 Quad.next_token()
                 B = Quad.B()
-                R.true = B.true
-                R.false = B.false
+                R.true = B.false
+                R.false = B.true
         elif (Quad.current_token() == '['):
             Quad.next_token()
             B = Quad.B()
-            R.true = B.false
-            R.false = B.true
+            R.true = B.true
+            R.false = B.false
         else:
             E1 = Node()
             E2 = Node()
@@ -809,4 +813,84 @@ class Quad:
             Quad.genQuad(relop, E1.place, E2.place, '_')
             R.false = Quad.makeList(Quad.nextQuad())
             Quad.genQuad('jump', '_', '_', '_')
+
+    @staticmethod
+    def input():
+        Quad.genQuad("in", Quad.current_token(), "_", "_")
+
+    @staticmethod
+    def output():
+        E = Node()
+        Quad.E(E)
+        Quad.genQuad("out", E.place, "_", "_")
+
+    @staticmethod
+    def while_loop():
+        condQuad = Quad.nextQuad()
+        Quad.next_token()    # (
+        condition = Quad.R() # condition
+        Quad.next_token()    # )
+        Quad.next_token()    # :
+        Quad.backpatch(condition.true, Quad.nextQuad())
+        if (Quad.current_token() == "#{"):
+            # TODO - statements
+            pass
+        else:
+            # TODO - statement
+            pass
+        Quad.genQuad("jump", "_", "_", condQuad)
+        Quad.backpatch(condition.false, Quad.nextQuad())
+
+    @staticmethod
+    def if_else():
+        Quad.next_token()    # (
+        condition = Quad.R() # condition
+        Quad.next_token()    # )
+        Quad.next_token()    # :
+        Quad.backpatch(condition.true, Quad.nextQuad())
+        if (Quad.current_token() == "#{"):
+            # TODO - statements
+            pass
+        else:
+            # TODO - statement
+            pass
+        ifList = Quad.makeList(Quad.nextQuad())
+        Quad.genQuad("jump", "_", "_", "_")
+        Quad.backpatch(condition.false, Quad.nextQuad())
+        if (Quad.peek_token() == "else"):
+            Quad.next_token()    # else
+            Quad.next_token()    # :
+            if (Quad.current_token() == "#{"):
+                # TODO - statements
+                pass
+            else:
+                # TODO - statement
+                pass
+            Quad.backpatch(ifList, Quad.nextQuad())
+
+
+
+    @staticmethod
+    def def_function():
+        if (len(Quad.functionStack) != 0):
+            Quad.genQuad("end_block", Quad.functionStack[-1], "_", "_")
+        if (Quad.peek_token != "def"):
+            Quad.genQuad("begin_block", Quad.current_token(), "_", "_")
+        else:
+            Quad.functionStack.append(Quad.current_token())
+            Quad.next_token()
+            Quad.def_function()
+            Quad.genQuad("begin_block", Quad.functionStack[-1], "_", "_")
+        
+        # TODO - statements - rest of code - while (Quad.current_token() != "#}"): code else: code below
+        if (Quad.current_token() == "#}"):
+            if (len(Quad.functionStack) != 0):
+                Quad.genQuad("end_block", Quad.functionStack.pop(-1), "_", "_")
+                if (Quad.peek_token != "def"):
+                    Quad.genQuad("begin_block", Quad.functionStack[-1], "_", "_")
+            else:
+                Quad.genQuad("halt","_", "_", "_")
+                Quad.genQuad("end_block", Quad.functionStack.pop(-1), "_", "_")
+        
+
 
