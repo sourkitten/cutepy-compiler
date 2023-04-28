@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "args": [
-                "test2.cpy"
+                "test1.cpy"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
