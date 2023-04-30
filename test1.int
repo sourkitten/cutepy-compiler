@@ -88,3 +88,10 @@ label	operator	   op1					op2		op3
 86		=              i                    _       T%15
 87		jump           _                    _       76
 88		end_block      main_primes          _       _
+89		begin_block    main                 _       _
+90		call           main_factorial       _       _
+91		call           main_fibonacci       _       _
+92		call           main_countdigits     _       _
+93		call           main_primes          _       _
+94		halt           _                    _       _
+95		end_block      main                 _       _

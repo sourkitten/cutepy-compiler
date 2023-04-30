@@ -986,13 +986,24 @@ class Quad:
         while (Quad.current_token() == "def"):
             Quad.next_token() # def
             Quad.def_function()
-        while (Quad.current_token() == ":"):
+        while (Quad.current_token() != ":"):
             Quad.next_token() # if __name__ == "__main__"
         Quad.next_token()
-        if (Quad.peek_tokens_ahead(2) != "\"__main__\""):
+        if (Quad.peek_tokens_ahead(-2) != "\"__main__\""):
             print("Error: program not named \"__main__\" !!!")
             exit(-1)
-        # TODO - MAIN AND HALT
+        Quad.genQuad("begin_block", "main", "_", "_")
+        while (True):
+            func_name = Quad.current_token()
+            Quad.genQuad("call", func_name, "_", "_")
+            Quad.next_token() # ID
+            Quad.next_token() # (
+            Quad.next_token() # )
+            Quad.next_token() # ;
+            if (Quad.tokenCounter >= len(Quad.tokens) - 1):
+                break
+        Quad.genQuad("halt", "_", "_", "_")
+        Quad.genQuad("end_block", "main", "_", "_")
 
     @staticmethod
     def toString():
