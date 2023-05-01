@@ -562,17 +562,16 @@ class Parser:
 
     
     def condition(self):
-        self.bool_factor()
+        self.bool_term()
         while (self.token.recognized_string == 'or'):
             self.token = self.getToken()
-            self.bool_factor
+            self.bool_term()
     
     def bool_term(self):
-        self.token = self.getToken()
         self.bool_factor()
         while (self.token.recognized_string == 'and'):
             self.token = self.getToken()
-            self.bool_factor
+            self.bool_factor()
     
     def bool_factor(self):
         if (self.token.recognized_string == "not"):
@@ -668,7 +667,7 @@ class Quad:
     tokens=[]
 
     def __init__(self, label, operator, operand1, operand2, operand3):
-        self.labelCounter = label
+        self.label = label
         self.operator = operator
         self.operand1 = operand1
         self.operand2 = operand2
@@ -717,6 +716,11 @@ class Quad:
     @staticmethod
     def next_token():
         Quad.tokenCounter += 1
+        return Quad.tokens[Quad.tokenCounter].recognized_string
+
+    @staticmethod
+    def prev_token():
+        Quad.tokenCounter -= 1
         return Quad.tokens[Quad.tokenCounter].recognized_string
 
     @staticmethod
@@ -785,8 +789,8 @@ class Quad:
         Quad.Q(Q1)
         B.true  = Q1.true
         B.false = Q1.false
-        while (Quad.current_token() == "or"):
-            Quad.next_token()
+        while (Quad.peek_tokens_ahead(-1) == "or"):
+            Quad.prev_token()
             Quad.Q(Q2)
             Quad.backpatch(B.false, Quad.nextQuad())
             B.true = Quad.mergeList(B.true, Q2.true)
@@ -808,6 +812,7 @@ class Quad:
 
     @staticmethod
     def R(R: Node):
+        Quad.next_token()
         if (Quad.current_token() == 'not'): # reversed
             Quad.next_token()
             if (Quad.current_token() == '['):
@@ -817,7 +822,6 @@ class Quad:
                 R.true = B.false
                 R.false = B.true
         elif (Quad.current_token() == '['):
-            Quad.next_token()
             B = Node()
             Quad.B(B)
             R.true = B.true
@@ -825,14 +829,12 @@ class Quad:
         else:
             E1 = Node()
             E2 = Node()
-            Quad.next_token()
-            R.true = Quad.makeList(Quad.nextQuad())
-            E1 = Node()
             Quad.E(E1)
             relop = Quad.current_token()
             Quad.next_token()
             E2 = Node()
             Quad.E(E2)
+            R.true = Quad.makeList(Quad.nextQuad())
             Quad.genQuad(relop, E1.place, E2.place, '_')
             R.false = Quad.makeList(Quad.nextQuad())
             Quad.genQuad('jump', '_', '_', '_')
@@ -890,11 +892,12 @@ class Quad:
                     E = Node()
                     Quad.E(E)
                     Quad.genQuad("par", E.place, "cv", "_")
-                Quad.genQuad("par", Quad.newTemp(), "ret", "_")
+                ret = Quad.newTemp()
+                Quad.genQuad("par", ret, "ret", "_")
                 Quad.genQuad("call", func_name, "_", "_")
                 Quad.next_token() # )
                 Quad.next_token() # ;
-                Quad.genQuad("=", id, "_", "ret") # TODO - ?????
+                Quad.genQuad("=", id, "_", ret)
             else: # expression assign
                 node = Node()
                 Quad.next_token() # id
@@ -913,7 +916,7 @@ class Quad:
     def declaration():
         Quad.next_token()
         Quad.next_token()
-        if (Quad.current_token() == ","):
+        while (Quad.current_token() == ","):
             Quad.next_token()
             Quad.next_token()
 
@@ -939,7 +942,8 @@ class Quad:
         Quad.next_token() # if
         condition = Node()
         Quad.R(condition) # condition
-        Quad.next_token() # )
+        while (Quad.current_token() != ":"):
+            Quad.next_token() # ]):
         Quad.next_token() # :
         Quad.backpatch(condition.true, Quad.nextQuad())
         if (Quad.current_token() == "#{"):
@@ -1009,7 +1013,7 @@ class Quad:
     def toString():
         string = 'label\toperator\t   op1\t\t\t\t\top2\t\top3\n'
         for quad in Quad.quads:
-            string = string + quad.labelCounter + "\t\t"  + quad.operator + ' '*(15-len(quad.operator)) + quad.operand1 + ' '*(21-len(quad.operand1)) + quad.operand2 + ' '*(8-len(quad.operand2)) + quad.operand3 + "\n"
+            string = string + quad.label + "\t\t"  + quad.operator + ' '*(15-len(quad.operator)) + quad.operand1 + ' '*(21-len(quad.operand1)) + quad.operand2 + ' '*(8-len(quad.operand2)) + quad.operand3 + "\n"
         return string
 
     @staticmethod
@@ -1026,6 +1030,254 @@ class Quad:
         Quad.main_pilot()
         Quad.write_quads()
 
+    @staticmethod
+    def getTokens():
+        return Quad.tokens()
+    
+    @staticmethod
+    def findStartingQuad(name):
+        for quad in Quad.quads:
+            if (quad.operand1 == name and quad.operator == "begin_block"):
+                return int(quad.label) + 1
+        return None
+    
+    @staticmethod
+    def getTempVariables(name):
+        quadCount = 0
+        flag = False
+        tempVars = []
+        while(quadCount < len(Quad.quads)):
+            quad = Quad.quads[quadCount]
+            if (quad.operand1 == name and quad.operator == "begin_block"):
+                flag = True
+            if (flag):
+                if (quad.operand3[:2] == "T%" or (quad.operator == "par" and quad.operand1[:2] == "T%")):
+                    if (quad.operand3[:2] == "T%"):
+                        variable = quad.operand3
+                    else:
+                        variable = quad.operand1
+
+                    add = True
+                    for var in tempVars:
+                        if (var == variable):
+                            add = False
+                    if (add):
+                        tempVars.append(variable)
+            if (quad.operand1 == name and quad.operator == "end_block"):
+                break
+            quadCount += 1
+        return tempVars
+
+
 ###### TEST INTERMEDIATE ######
-Quad.intermediate()
+#Quad.intermediate()
+
+
+###### SYMBOL TABLE ######
+
+class Entity:
+    def __init__(self, name):
+        self.name = name
+
+    def toString(self):
+        return self.name
         
+class Variable(Entity):
+    def __init__(self, name, offset):
+        self.name = name
+        self.offset = offset
+
+    def toString(self):
+        return self.name + "/" + str(self.offset)
+
+# TODO MAYBE UNNEEDED
+class FormalParameter(Entity):
+    def __init__(self, name):
+        self.name = name
+
+    def toString(self):
+        return self.name
+
+class Function(Entity):
+    def __init__(self, name):
+        self.name         = name
+        self.startingQuad = Quad.findStartingQuad(name)
+        self.frameLength  = None
+        self.parameters   = []
+
+    def toString(self):
+        return self.name + "<" + ",".join(self.parameters) + ">"
+
+class TemporaryVariable(Variable):
+    def __init__(self, name, offset):
+        self.name   = name
+        self.offset = offset
+
+    def toString(self):
+        return self.name + "/" + self.offset
+
+class Parameter(Variable):
+    def __init__(self, name, offset):
+        self.name = name
+        self.offset = offset
+
+    def toString(self):
+        return self.name + "/" + str(self.offset)
+
+class Scope:
+    def __init__(self, level):
+        self.offset = 12
+        self.entities = []
+        self.level = level
+
+    def addEntry(self, entry:Entity):
+        self.entities.append(entry)
+
+class Table:
+    def __init__(self):
+        self.currentLevel = 0
+        self.scopes = []
+
+    def addEntry(self, entry:Entity):
+        self.scopes[-1].addEntry(entry)
+
+    def addScope(self):
+        self.currentLevel += 1
+        self.scopes.append(Scope(self.currentLevel))
+
+    def currentScope(self):
+        return self.scopes[-1]
+
+    def removeScope(self):
+        self.currentLevel -= 1
+        self.scopes.pop(-1)
+
+    def updateFields(self, frameLength):
+        self.scopes[-2].entities[-1].frameLength = frameLength
+
+    def addFormalParameter(self, name):
+        self.scopes[-2].entities[-1].parameters.append(name)
+
+    def searchEntry(self, name):
+        for i in range(len(self.scopes) - 1, -1, -1):
+            for entry in self.scopes[i]:
+                if (entry.name == name):
+                    return entry
+        self.error("Variable " + name + " not declared!!")
+
+    def error(self, error):
+        print(error)
+        exit(-1)
+
+    def snapshot(self):
+        snapshot = ""
+        for i in range(len(self.scopes) - 1, -1, -1):
+            snapshot += str(i) + " | "
+            for entry in self.scopes[i].entities:
+                snapshot += entry.toString() + ",\t"
+            snapshot = snapshot[:-2] + "\n"
+        return snapshot
+    
+    def pilot(self):
+        Quad.intermediate()
+        token = Quad.tokens
+        self.tokenCounter = 0
+        self.snapshots = ""
+
+        def currentToken():
+            return token[self.tokenCounter].recognized_string
+
+        def nextToken():
+            self.tokenCounter += 1
+
+        def skipToEnd():
+            openBracketCounter = 0
+            while (not (currentToken() == "#}" and openBracketCounter == 0)):
+                if (currentToken() == "#{"):
+                    openBracketCounter += 1
+                elif (currentToken() == "#}"):
+                    openBracketCounter -= 1
+                nextToken()
+            nextToken()
+        
+        def function():
+            self.addScope()
+            func_id = currentToken()
+            nextToken() # ID
+            while (currentToken() != ")"):
+                nextToken() # ( or ,
+                if (currentToken() == ")"):
+                    break
+                self.addEntry(Parameter(currentToken(), self.currentScope().offset))
+                self.currentScope().offset += 4
+                self.addFormalParameter(currentToken())
+                nextToken() # parameter
+            nextToken() # )
+            nextToken() # :
+            nextToken() # #{
+            while (currentToken() in ["#declare","def"]):
+                    if (currentToken() == "#declare"):
+                        nextToken() # #declare
+                        self.addEntry(Variable(currentToken(), self.currentScope().offset))
+                        self.currentScope().offset += 4
+                        nextToken() # ID
+                        while (currentToken() == ","):
+                            nextToken() # ,
+                            self.addEntry(Variable(currentToken(), self.currentScope().offset))
+                            self.currentScope().offset += 4
+                            nextToken() # ID
+                    elif (currentToken() == "def"):
+                        nextToken() # def
+                        self.addEntry(Function(currentToken()))
+                        function()
+            for var in Quad.getTempVariables(func_id):
+                self.addEntry(Variable(var, self.currentScope().offset))
+                self.currentScope().offset += 4
+            skipToEnd()
+            self.snapshots += func_id + "\n" + self.snapshot() + "\n"
+            self.updateFields(self.currentScope().offset)
+            self.removeScope()
+
+        while (self.tokenCounter < len(token)):
+            if (currentToken() == "def"):
+                nextToken() # def
+                snap = currentToken() + "\n"
+                self.addScope()
+                nextToken() # ID
+                nextToken() # (
+                nextToken() # )
+                nextToken() # :
+                nextToken() # #{
+                while (currentToken() in ["#declare","def"]):
+                    if (currentToken() == "#declare"):
+                        nextToken() # #declare
+                        self.addEntry(Variable(currentToken(), self.currentScope().offset))
+                        self.currentScope().offset += 4
+                        nextToken() # ID
+                        while (currentToken() == ","):
+                            nextToken() # ,
+                            self.addEntry(Variable(currentToken(), self.currentScope().offset))
+                            self.currentScope().offset += 4
+                            nextToken() # ID
+                    elif (currentToken() == "def"):
+                        nextToken() # def
+                        self.addEntry(Function(currentToken()))
+                        function()
+                for var in Quad.getTempVariables(snap):
+                    self.addEntry(Variable(var, self.currentScope().offset))
+                    self.currentScope().offset += 4
+                skipToEnd()
+                self.snapshots += snap + self.snapshot() + "\n"
+                self.removeScope()
+            elif (currentToken() == "if"):
+                break            
+            else:
+                self.error("")
+        scopeFile = open(sys.argv[1][:-3] + "scp", "w")
+        scopeFile.write(self.snapshots)
+        scopeFile.close
+
+###### SYMBOL TABLE TEST ######
+
+table = Table()
+table.pilot()

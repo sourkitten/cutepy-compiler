@@ -74,9 +74,81 @@ def main_primes():
 	#}
 #}
 
+def main_test():
+#{
+	#declare x
+	def max(a, b):
+	#{
+		if (a > b):
+			return (a);
+		else:
+			return (b);
+	#}
+	x = max (max( 5, 7), max(8, 9));
+	print(x);
+#}
+
+def main_ifWhile():
+#{
+	#declare c,a,b,t
+	a=1;
+	b=0;
+	t=0;
+	while ([a+b<1 and b<5]):
+	#{
+		if (t==1):
+			c=2;
+		else:
+			if (t==2):
+				c=4;
+			else:
+				c=0;
+		while (a<1):
+		#{
+			if (a==2):
+				while(b==1):
+				#{
+					c=2;
+				#}
+		#}
+	#}
+#}
+
+def main_small():
+#{
+    #declare b,g,f
+	def P1(X,Y):
+	#{ 
+		#declare e,f
+		def P11(X):
+		#{ 
+			#declare e
+			e=1;
+			X=Y;
+			f=b;
+			return(e);
+		#}
+		#$ code for P1 #$
+		b=X;
+		e=P11(X);
+		e=P1(X, Y);
+		X=b;
+		return(e);
+	#}
+	#$ code for main #$
+	b=0;
+	f=0;
+	g=0;
+	if ([b>1 and f<2 or g+1<f+b]):
+		f=P1(g);
+	else:
+		f=1;
+#}
+
 if __name__ == "__main__":
 	#$ call of main functions #$
 	main_factorial();
 	main_fibonacci();
 	main_countdigits();
 	main_primes();
+	main_test();

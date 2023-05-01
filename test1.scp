@@ -1,0 +1,47 @@
+main_factorial
+0 | x/12,	i/16,	fact/20
+
+fibonacci
+1 | x/12,	T%2/16,	T%3/20,	T%4/24,	T%5/28,	T%6/32
+0 | x/12,	fibonacci<x>
+
+main_fibonacci
+0 | x/12,	fibonacci<x>
+
+main_countdigits
+0 | x/12,	count/16
+
+divides
+2 | x/12,	y/16,	T%10/20,	T%11/24
+1 | x/12,	ibasic/16,	divides<x,y>
+0 | i/12,	isPrime<x>
+
+isPrime
+1 | x/12,	ibasic/16,	divides<x,y>,	T%12/20,	T%13/24
+0 | i/12,	isPrime<x>
+
+main_primes
+0 | i/12,	isPrime<x>
+
+max
+1 | a/12,	b/16
+0 | x/12,	max<a,b>
+
+main_test
+0 | x/12,	max<a,b>
+
+main_ifWhile
+0 | c/12,	a/16,	b/20,	t/24
+
+P11
+2 | X/12,	e/16
+1 | X/12,	Y/16,	e/20,	f/24,	P11<X>
+0 | b/12,	g/16,	f/20,	P1<X,Y>
+
+P1
+1 | X/12,	Y/16,	e/20,	f/24,	P11<X>,	T%20/28,	T%21/32
+0 | b/12,	g/16,	f/20,	P1<X,Y>
+
+main_small
+0 | b/12,	g/16,	f/20,	P1<X,Y>
+
