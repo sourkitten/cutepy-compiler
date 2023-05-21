@@ -1069,22 +1069,20 @@ class Quad:
         return tempVars
 
 
-###### TEST INTERMEDIATE ######
-#Quad.intermediate()
-
-
 ###### SYMBOL TABLE ######
 
 class Entity:
-    def __init__(self, name):
+    def __init__(self, name, level):
         self.name = name
+        self.level = level
 
     def toString(self):
         return self.name
         
 class Variable(Entity):
-    def __init__(self, name, offset):
+    def __init__(self, name, level, offset):
         self.name = name
+        self.level = level
         self.offset = offset
 
     def toString(self):
@@ -1092,15 +1090,17 @@ class Variable(Entity):
 
 # TODO MAYBE UNNEEDED
 class FormalParameter(Entity):
-    def __init__(self, name):
+    def __init__(self, name, level):
         self.name = name
+        self.level = level
 
     def toString(self):
         return self.name
 
 class Function(Entity):
-    def __init__(self, name):
+    def __init__(self, name, level):
         self.name         = name
+        self.level = level
         self.startingQuad = Quad.findStartingQuad(name)
         self.frameLength  = None
         self.parameters   = []
@@ -1109,16 +1109,18 @@ class Function(Entity):
         return self.name + "<" + ",".join(self.parameters) + ">"
 
 class TemporaryVariable(Variable):
-    def __init__(self, name, offset):
+    def __init__(self, name, level, offset):
         self.name   = name
+        self.level = level
         self.offset = offset
 
     def toString(self):
         return self.name + "/" + self.offset
 
 class Parameter(Variable):
-    def __init__(self, name, offset):
+    def __init__(self, name, level, offset):
         self.name = name
+        self.level = level
         self.offset = offset
 
     def toString(self):
@@ -1208,7 +1210,7 @@ class Table:
                 nextToken() # ( or ,
                 if (currentToken() == ")"):
                     break
-                self.addEntry(Parameter(currentToken(), self.currentScope().offset))
+                self.addEntry(Parameter(currentToken(), self.currentLevel, self.currentScope().offset))
                 self.currentScope().offset += 4
                 self.addFormalParameter(currentToken())
                 nextToken() # parameter
@@ -1218,12 +1220,12 @@ class Table:
             while (currentToken() in ["#declare","def"]):
                     if (currentToken() == "#declare"):
                         nextToken() # #declare
-                        self.addEntry(Variable(currentToken(), self.currentScope().offset))
+                        self.addEntry(Variable(currentToken(), self.currentLevel, self.currentScope().offset))
                         self.currentScope().offset += 4
                         nextToken() # ID
                         while (currentToken() == ","):
                             nextToken() # ,
-                            self.addEntry(Variable(currentToken(), self.currentScope().offset))
+                            self.addEntry(Variable(currentToken(), self.currentLevel, self.currentScope().offset))
                             self.currentScope().offset += 4
                             nextToken() # ID
                     elif (currentToken() == "def"):
@@ -1231,7 +1233,7 @@ class Table:
                         self.addEntry(Function(currentToken()))
                         function()
             for var in Quad.getTempVariables(func_id):
-                self.addEntry(Variable(var, self.currentScope().offset))
+                self.addEntry(Variable(var, self.currentLevel, self.currentScope().offset))
                 self.currentScope().offset += 4
             skipToEnd()
             self.snapshots += func_id + "\n" + self.snapshot() + "\n"
@@ -1278,6 +1280,119 @@ class Table:
         scopeFile.close
 
 ###### SYMBOL TABLE TEST ######
-
 table = Table()
 table.pilot()
+
+final = open(sys.argv[1][:-3] + "s", "w")
+
+def lookup_current_scope(name):
+	for entity in table.scopes[table.currentLevel].entities:
+		if (entity.name == name):
+			return entity
+	return None
+
+def lookup_enclosing_scopes(name):
+    for scope in reversed(table.scopes):
+        for entity in scope.entities:
+            if (entity.name == name):
+                return entity
+    return None
+			
+
+def gnvlcode(variable):
+    entry = table.searchEntry(variable)
+    if entry is None:
+        raise ValueError("Variable not found: " + variable)
+
+    level_diff = table.currentLevel - entry.level
+    code = "lw t0, -4(sp)\n"
+
+    # Ascend the levels in the genealogical tree
+    for _ in range(level_diff-1):
+        code += "lw t0, -4(t0)\n"
+
+    # Increment t0 by an offset to access the desired information
+    code += f"addi t0, t0, -{entry.offset}\n"
+
+    return code
+
+def loadvr(v, reg):
+    # Retrieve information for v from the symbol table
+    entry = table.searchEntry(v)
+    if entry is None:
+        raise ValueError("Variable not found: " + v)
+
+    if entry.is_local_variable or entry.is_parameter_by_value in ancestor_function:
+        # Access a local variable or value-passed parameter in an ancestor function
+        code = gnvlcode(v) + f"lw {reg}, 0(t0)"
+    elif entry.is_local_variable or entry.is_parameter_by_value or entry.is_temporary_variable:
+        # Access a local variable, value-passed parameter, or temporary variable using sp
+        code = f"lw {reg}, -{entry.offset}(sp)"
+
+    produce(code)
+
+def storerv(v, reg):
+    # Retrieve information for v from the symbol table
+    entry = table.searchEntry(v)
+    if entry is None:
+        raise ValueError("Variable not found: " + v)
+
+    if entry.is_local_variable or entry.is_parameter_by_value in ancestor_function:
+        # Access a local variable or value-passed parameter in an ancestor function
+        code = gnvlcode(v) + f"sw {reg}, 0(t0)"
+    elif entry.is_local_variable or entry.is_parameter_by_value or entry.is_temporary_variable:
+        # Access a local variable, value-passed parameter, or temporary variable using sp
+        code = f"sw {reg}, -{entry.offset}(sp)"
+    produce(code)
+
+def produce(code):
+    final.write(code + "\n")
+
+# Dictionary go brrr
+symbols = {
+    "+" : "add",
+    "-" : "sub",
+    "*" : "mul",
+    "//": "div",
+    "==": "beq",
+    "<>": "bne",
+    "<" : "blt",
+    ">" : "bgt",
+    "<=": "ble",
+    ">=": "bge"
+}
+
+def parseQuad(quad):
+    if quad.operator == "=":
+        loadvr(quad.operand1, "t0")
+        storerv(quad.operand1, "t0")
+    elif quad.operator in ["+", "-", "*", "//"]:
+        loadvr(quad.operand1, "t0")
+        loadvr(quad.operand2, "t1")
+        produce(f"{symbols[quad.operator]} t0, t1, t0")
+        storerv(quad.operand3, "t0")
+    elif quad.operator == "jump":
+        produce(f"j {quad.operand3}")
+    elif quad.operator in ["==", "<>", "<", ">", "<=", ">="]:
+        loadvr(quad.operand1, "t0")
+        loadvr(quad.operand2, "t1")
+        produce(f"{symbols[quad.operator]} t0, t1, {quad.operand3}")
+        storerv(quad.operand3, "t0")
+
+def parseFunction(functionName):
+    token = Quad.tokens
+    tokenCounter = 0
+
+    def currentToken():
+            return token[tokenCounter].recognized_string
+
+    def nextToken():
+        tokenCounter += 1
+
+    while (not (currentToken().operand == functionName
+                and currentToken().operator == "begin_block") ):
+        nextToken()
+    nextToken() # begin_block
+    while (currentToken().operator != "end_block"):
+        parseQuad()
+        nextToken()
