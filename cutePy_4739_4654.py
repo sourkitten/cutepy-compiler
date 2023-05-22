@@ -891,9 +891,9 @@ class Quad:
                     Quad.next_token() # ( or ,
                     E = Node()
                     Quad.E(E)
-                    Quad.genQuad("par", E.place, "cv", "_")
+                    Quad.genQuad("par", E.place, "cv", func_name)
                 ret = Quad.newTemp()
-                Quad.genQuad("par", ret, "ret", "_")
+                Quad.genQuad("par", ret, "ret", func_name)
                 Quad.genQuad("call", func_name, "_", "_")
                 Quad.next_token() # )
                 Quad.next_token() # ;
@@ -1282,6 +1282,9 @@ class Table:
 ###### SYMBOL TABLE TEST ######
 table = Table()
 table.pilot()
+snapshots = []
+for snapshot in table.snapshots.split("\n"):
+    snapshots.append(snapshot.split(","))
 
 final = open(sys.argv[1][:-3] + "s", "w")
 
@@ -1322,12 +1325,12 @@ def loadvr(v, reg):
     if entry is None:
         raise ValueError("Variable not found: " + v)
 
-    if entry.is_local_variable or entry.is_parameter_by_value in ancestor_function:
-        # Access a local variable or value-passed parameter in an ancestor function
-        code = gnvlcode(v) + f"lw {reg}, 0(t0)"
-    elif entry.is_local_variable or entry.is_parameter_by_value or entry.is_temporary_variable:
+    if type(entry) is TemporaryVariable:
         # Access a local variable, value-passed parameter, or temporary variable using sp
         code = f"lw {reg}, -{entry.offset}(sp)"
+    else:
+        # Access a local variable or value-passed parameter in an ancestor function
+        code = gnvlcode(v) + f"lw {reg}, 0(t0)"
 
     produce(code)
 
@@ -1337,16 +1340,26 @@ def storerv(v, reg):
     if entry is None:
         raise ValueError("Variable not found: " + v)
 
-    if entry.is_local_variable or entry.is_parameter_by_value in ancestor_function:
-        # Access a local variable or value-passed parameter in an ancestor function
-        code = gnvlcode(v) + f"sw {reg}, 0(t0)"
-    elif entry.is_local_variable or entry.is_parameter_by_value or entry.is_temporary_variable:
+    if type(entry) is TemporaryVariable:
         # Access a local variable, value-passed parameter, or temporary variable using sp
         code = f"sw {reg}, -{entry.offset}(sp)"
+    else:
+        # Access a local variable or value-passed parameter in an ancestor function
+        code = gnvlcode(v) + f"sw {reg}, 0(t0)"
     produce(code)
 
 def produce(code):
     final.write(code + "\n")
+
+def getFrameLength(function):
+    found = False
+    for snapshot in snapshots:
+        if snapshot[0] == function:
+            found = True # get next line
+        if found:
+            for item in reversed(snapshot):
+                if "/" in item:
+                    return int(item.split("/")[-1]) + 4
 
 # Dictionary go brrr
 symbols = {
@@ -1362,7 +1375,11 @@ symbols = {
     ">=": "bge"
 }
 
-def parseQuad(quad):
+labels = {}
+
+def parseQuad(quad, functionName):
+    produce(f"L{quad.label}:")
+    produce(f"#\t{quad.toString}")
     if quad.operator == "=":
         loadvr(quad.operand1, "t0")
         storerv(quad.operand1, "t0")
@@ -1378,21 +1395,62 @@ def parseQuad(quad):
         loadvr(quad.operand2, "t1")
         produce(f"{symbols[quad.operator]} t0, t1, {quad.operand3}")
         storerv(quad.operand3, "t0")
+    elif quad.operator == "par":
+        if quad.operand2 == "cv":
+            produce(f"addi fp, sp, {getFrameLength(quad.operand3)}")
+            loadvr(quad.operand1, "t0")
+            produce(f"sw t0, -{(-12+4*parCounter)}(fp)")
+            parCounter = parCounter + 1
+        else:
+            produce(f"addi t0, sp, -{getFrameLength(quad.operand3)}")
+            produce("sw t0, -8(fp)")
+    elif quad.operator == "call":
+        if quad.operand1 == functionName:
+            produce("lw t0, -4(sp)")
+            produce("sw t0, -4(fp)")
+        else:
+            produce("sw sp, -4(fp)")
+        produce(f"addi sp, sp, {getFrameLength(quad.operand1)}")
+        produce(f"jal {labels.get(quad.operand1)}")
+        produce(f"addi sp, sp, -{getFrameLength(quad.operand1)}")
+    elif quad.operator == "ret":
+        loadvr(quad.operand3, "t1")
+        produce("lw t0, -8(sp)")
+        produce("sw t1, 0(t0)")
+    elif quad.operator == "begin_block":
+        labels.update({quad.operand1: quad.label})
+        produce("sw ra, 0(sp)")
+    elif quad.operator == "end_block":
+        produce("lw ra, 0(sp)")
+        produce("jr ra")
+        
+             
 
-def parseFunction(functionName):
+def pilot():
     token = Quad.tokens
     tokenCounter = 0
+    currentfunctionName = "main"
 
     def currentToken():
-            return token[tokenCounter].recognized_string
+        return token[tokenCounter].recognized_string
 
     def nextToken():
         tokenCounter += 1
 
-    while (not (currentToken().operand == functionName
-                and currentToken().operator == "begin_block") ):
+    produce("j Lmain")
+    while (currentToken().operand1 != "main"):
+        parseQuad(currentToken(), currentfunctionName)
         nextToken()
-    nextToken() # begin_block
-    while (currentToken().operator != "end_block"):
-        parseQuad()
-        nextToken()
+    nextToken() # begin_block main
+    produce("Lmain:")
+    while (currentToken().operator == "call"):
+        produce("sw sp, -4(fp)")
+        produce(f"addi sp, sp, {getFrameLength(currentToken().operand1)}")
+        produce(f"jal {labels.get(currentToken().operand1)}")
+        produce(f"addi sp, sp, -{getFrameLength(currentToken().operand1)}")
+    produce("li a0, 0")
+    produce("li a7, 93")
+    produce("ecall")
+
+pilot()
+final.close()
