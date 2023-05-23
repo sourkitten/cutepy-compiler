@@ -1088,15 +1088,6 @@ class Variable(Entity):
     def toString(self):
         return self.name + "/" + str(self.offset)
 
-# TODO MAYBE UNNEEDED
-class FormalParameter(Entity):
-    def __init__(self, name, level):
-        self.name = name
-        self.level = level
-
-    def toString(self):
-        return self.name
-
 class Function(Entity):
     def __init__(self, name, level):
         self.name         = name
@@ -1230,7 +1221,7 @@ class Table:
                             nextToken() # ID
                     elif (currentToken() == "def"):
                         nextToken() # def
-                        self.addEntry(Function(currentToken()))
+                        self.addEntry(Function(currentToken(), self.currentLevel))
                         function()
             for var in Quad.getTempVariables(func_id):
                 self.addEntry(Variable(var, self.currentLevel, self.currentScope().offset))
@@ -1243,7 +1234,7 @@ class Table:
         while (self.tokenCounter < len(token)):
             if (currentToken() == "def"):
                 nextToken() # def
-                snap = currentToken() + "\n"
+                snap = currentToken()
                 self.addScope()
                 nextToken() # ID
                 nextToken() # (
@@ -1253,23 +1244,23 @@ class Table:
                 while (currentToken() in ["#declare","def"]):
                     if (currentToken() == "#declare"):
                         nextToken() # #declare
-                        self.addEntry(Variable(currentToken(), self.currentScope().offset))
+                        self.addEntry(Variable(currentToken(), self.currentLevel, self.currentScope().offset))
                         self.currentScope().offset += 4
                         nextToken() # ID
                         while (currentToken() == ","):
                             nextToken() # ,
-                            self.addEntry(Variable(currentToken(), self.currentScope().offset))
+                            self.addEntry(Variable(currentToken(), self.currentLevel, self.currentScope().offset))
                             self.currentScope().offset += 4
                             nextToken() # ID
                     elif (currentToken() == "def"):
                         nextToken() # def
-                        self.addEntry(Function(currentToken()))
+                        self.addEntry(Function(currentToken(), self.currentLevel))
                         function()
                 for var in Quad.getTempVariables(snap):
-                    self.addEntry(Variable(var, self.currentScope().offset))
+                    self.addEntry(Variable(var, self.currentLevel, self.currentScope().offset))
                     self.currentScope().offset += 4
                 skipToEnd()
-                self.snapshots += snap + self.snapshot() + "\n"
+                self.snapshots += snap + "\n" + self.snapshot() + "\n"
                 self.removeScope()
             elif (currentToken() == "if"):
                 break            
@@ -1282,28 +1273,37 @@ class Table:
 ###### SYMBOL TABLE TEST ######
 table = Table()
 table.pilot()
+###### FINAL CODE ######
+token = Quad.quads
+tokenCounter = 0
+currentfunctionName = ["main"]
 snapshots = []
-for snapshot in table.snapshots.split("\n"):
-    snapshots.append(snapshot.split(","))
-
 final = open(sys.argv[1][:-3] + "s", "w")
+for snapshot in table.snapshots.split("\n"):
+    snapshots.append(snapshot.replace(" | ", ",\t").split(",\t"))
 
-def lookup_current_scope(name):
-	for entity in table.scopes[table.currentLevel].entities:
-		if (entity.name == name):
-			return entity
-	return None
 
-def lookup_enclosing_scopes(name):
-    for scope in reversed(table.scopes):
-        for entity in scope.entities:
-            if (entity.name == name):
-                return entity
-    return None
-			
+def searchEntry(variable):
+    found = False
+    for line in snapshots:
+        if line[0] == currentfunctionName[-1]:
+            found = True # get next line
+        if found:
+            if line[0] == '':
+                return None
+            for entry in line:
+                if "/" in entry:
+                    var = entry.split("/")
+                    if variable == var[0]:
+                        if var[0][:2] == "T%":
+                            return TemporaryVariable(var[0],int(line[0]),int(var[1]))
+                        else:
+                            return Variable(var[0],int(line[0]),int(var[1]))
+                    
+                
 
 def gnvlcode(variable):
-    entry = table.searchEntry(variable)
+    entry = searchEntry(variable)
     if entry is None:
         raise ValueError("Variable not found: " + variable)
 
@@ -1321,7 +1321,7 @@ def gnvlcode(variable):
 
 def loadvr(v, reg):
     # Retrieve information for v from the symbol table
-    entry = table.searchEntry(v)
+    entry = searchEntry(v)
     if entry is None:
         raise ValueError("Variable not found: " + v)
 
@@ -1336,7 +1336,7 @@ def loadvr(v, reg):
 
 def storerv(v, reg):
     # Retrieve information for v from the symbol table
-    entry = table.searchEntry(v)
+    entry = searchEntry(v)
     if entry is None:
         raise ValueError("Variable not found: " + v)
 
@@ -1377,35 +1377,71 @@ symbols = {
 
 labels = {}
 
-def parseQuad(quad, functionName):
+numbers = ["0", "1", "2", "3",
+           "4", "5", "6",
+           "7", "8", "9"]
+
+def parseQuad(quad):
+    global currentfunctionName
+    parCounter = 0
+
     produce(f"L{quad.label}:")
     produce(f"#\t{quad.toString}")
     if quad.operator == "=":
         loadvr(quad.operand1, "t0")
         storerv(quad.operand1, "t0")
     elif quad.operator in ["+", "-", "*", "//"]:
-        loadvr(quad.operand1, "t0")
-        loadvr(quad.operand2, "t1")
+        if quad.operand2[0] in numbers:
+            produce(f"li t0, {quad.operand2}")
+        else:
+            loadvr(quad.operand1, "t0")
+        if quad.operand2[0] in numbers:
+            produce(f"li t1, {quad.operand2}")
+        else:
+            loadvr(quad.operand2, "t1")
         produce(f"{symbols[quad.operator]} t0, t1, t0")
         storerv(quad.operand3, "t0")
     elif quad.operator == "jump":
         produce(f"j {quad.operand3}")
     elif quad.operator in ["==", "<>", "<", ">", "<=", ">="]:
-        loadvr(quad.operand1, "t0")
-        loadvr(quad.operand2, "t1")
+        if quad.operand2[0] in numbers:
+            produce(f"li t0, {quad.operand2}")
+        else:
+            loadvr(quad.operand1, "t0")
+        if quad.operand2[0] in numbers:
+            produce(f"li t1, {quad.operand2}")
+        else:
+            loadvr(quad.operand2, "t1")
         produce(f"{symbols[quad.operator]} t0, t1, {quad.operand3}")
-        storerv(quad.operand3, "t0")
     elif quad.operator == "par":
         if quad.operand2 == "cv":
             produce(f"addi fp, sp, {getFrameLength(quad.operand3)}")
-            loadvr(quad.operand1, "t0")
+            if quad.operand1[0] in numbers:
+                produce(f"li t0, {quad.operand1}")
+            else:
+                loadvr(quad.operand1, "t0")
             produce(f"sw t0, -{(-12+4*parCounter)}(fp)")
             parCounter = parCounter + 1
         else:
             produce(f"addi t0, sp, -{getFrameLength(quad.operand3)}")
             produce("sw t0, -8(fp)")
+    elif quad.operator == "in":
+        produce("li a7, 5")
+        produce("ecall")
+        storerv(quad.operand1, "a7")
+    elif quad.operator == "out":
+        if quad.operand1[0] in numbers:
+            produce(f"li a0, {quad.operand1}")
+        else:
+            loadvr(quad.operand1, "a0")
+        produce("li a7, 1")
+        produce("ecall")
+        produce("la a0, str_nl")
+        produce("li a7, 4")
+        produce("ecall")
     elif quad.operator == "call":
-        if quad.operand1 == functionName:
+        parCounter = 0
+        if quad.operand1 == currentfunctionName[-1]:
             produce("lw t0, -4(sp)")
             produce("sw t0, -4(fp)")
         else:
@@ -1414,40 +1450,43 @@ def parseQuad(quad, functionName):
         produce(f"jal {labels.get(quad.operand1)}")
         produce(f"addi sp, sp, -{getFrameLength(quad.operand1)}")
     elif quad.operator == "ret":
-        loadvr(quad.operand3, "t1")
+        if quad.operand3[0] in numbers:
+            produce(f"li t1, {quad.operand3}")
+        else:
+            loadvr(quad.operand3, "t1")
         produce("lw t0, -8(sp)")
         produce("sw t1, 0(t0)")
     elif quad.operator == "begin_block":
         labels.update({quad.operand1: quad.label})
+        currentfunctionName.append(quad.operand1)
         produce("sw ra, 0(sp)")
     elif quad.operator == "end_block":
         produce("lw ra, 0(sp)")
+        del currentfunctionName[-1]
         produce("jr ra")
-        
-             
-
+            
 def pilot():
-    token = Quad.tokens
-    tokenCounter = 0
-    currentfunctionName = "main"
+    def currentQuad():
+        return token[tokenCounter]
 
-    def currentToken():
-        return token[tokenCounter].recognized_string
-
-    def nextToken():
+    def nextQuad():
+        global tokenCounter
         tokenCounter += 1
 
+    produce(".data")
+    produce("str_nl: .asciz \"\\n\"")
     produce("j Lmain")
-    while (currentToken().operand1 != "main"):
-        parseQuad(currentToken(), currentfunctionName)
-        nextToken()
-    nextToken() # begin_block main
+    while (currentQuad().operand1 != "main"):
+        parseQuad(currentQuad())
+        nextQuad()
+    nextQuad() # begin_block main
     produce("Lmain:")
-    while (currentToken().operator == "call"):
+    while (currentQuad().operator == "call"):
         produce("sw sp, -4(fp)")
-        produce(f"addi sp, sp, {getFrameLength(currentToken().operand1)}")
-        produce(f"jal {labels.get(currentToken().operand1)}")
-        produce(f"addi sp, sp, -{getFrameLength(currentToken().operand1)}")
+        produce(f"addi sp, sp, {getFrameLength(currentQuad().operand1)}")
+        produce(f"jal {labels.get(currentQuad().operand1)}")
+        produce(f"addi sp, sp, -{getFrameLength(currentQuad().operand1)}")
+        nextQuad()
     produce("li a0, 0")
     produce("li a7, 93")
     produce("ecall")
