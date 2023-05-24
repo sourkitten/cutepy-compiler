@@ -1402,8 +1402,8 @@ def parseQuad(quad):
         loadvr(quad.operand1, "t0")
         storerv(quad.operand1, "t0")
     elif quad.operator in ["+", "-", "*", "//"]:
-        if quad.operand2[0] in numbers:
-            produce(f"li t0, {quad.operand2}")
+        if quad.operand1[0] in numbers:
+            produce(f"li t0, {quad.operand1}")
         else:
             loadvr(quad.operand1, "t0")
         if quad.operand2[0] in numbers:
@@ -1413,10 +1413,10 @@ def parseQuad(quad):
         produce(f"{symbols[quad.operator]} t0, t1, t0")
         storerv(quad.operand3, "t0")
     elif quad.operator == "jump":
-        produce(f"j {quad.operand3}")
+        produce(f"j L{quad.operand3}")
     elif quad.operator in ["==", "<>", "<", ">", "<=", ">="]:
-        if quad.operand2[0] in numbers:
-            produce(f"li t0, {quad.operand2}")
+        if quad.operand1[0] in numbers:
+            produce(f"li t0, {quad.operand1}")
         else:
             loadvr(quad.operand1, "t0")
         if quad.operand2[0] in numbers:
@@ -1458,7 +1458,7 @@ def parseQuad(quad):
         else:
             produce("sw sp, -4(fp)")
         produce(f"addi sp, sp, {getFrameLength(quad.operand1)}")
-        produce(f"jal {labels.get(quad.operand1)}")
+        produce(f"jal L{labels.get(quad.operand1)}")
         produce(f"addi sp, sp, -{getFrameLength(quad.operand1)}")
     elif quad.operator == "ret":
         if quad.operand3[0] in numbers:
@@ -1495,7 +1495,7 @@ def pilot():
     while (currentQuad().operator == "call"):
         produce("sw sp, -4(fp)")
         produce(f"addi sp, sp, {getFrameLength(currentQuad().operand1)}")
-        produce(f"jal {labels.get(currentQuad().operand1)}")
+        produce(f"jal L{labels.get(currentQuad().operand1)}")
         produce(f"addi sp, sp, -{getFrameLength(currentQuad().operand1)}")
         nextQuad()
     produce("li a0, 0")
