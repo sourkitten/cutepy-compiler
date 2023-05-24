@@ -1491,7 +1491,7 @@ def pilot():
         parseQuad(currentQuad())
         nextQuad()
     nextQuad() # begin_block main
-    produce("Lmain:")
+    produce("\nLmain:")
     while (currentQuad().operator == "call"):
         produce("sw sp, -4(fp)")
         produce(f"addi sp, sp, {getFrameLength(currentQuad().operand1)}")

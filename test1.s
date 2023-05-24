@@ -1169,6 +1169,7 @@ L180:
 #180 end_block main_small _ _
 lw ra, 0(sp)
 jr ra
+
 Lmain:
 sw sp, -4(fp)
 addi sp, sp, 32
