@@ -1013,7 +1013,11 @@ class Quad:
     def toString():
         string = 'label\toperator\t   op1\t\t\t\t\top2\t\top3\n'
         for quad in Quad.quads:
-            string = string + quad.label + "\t\t"  + quad.operator + ' '*(15-len(quad.operator)) + quad.operand1 + ' '*(21-len(quad.operand1)) + quad.operand2 + ' '*(8-len(quad.operand2)) + quad.operand3 + "\n"
+            string = (string + quad.label + "\t\t"
+                      + quad.operator + ' '*(15-len(quad.operator))
+                      + quad.operand1 + ' '*(21-len(quad.operand1))
+                      + quad.operand2 + ' '*(8-len(quad.operand2))
+                      + quad.operand3 + "\n")
         return string
 
     @staticmethod
@@ -1381,12 +1385,19 @@ numbers = ["0", "1", "2", "3",
            "4", "5", "6",
            "7", "8", "9"]
 
+def toString(quad: Quad):
+    return (  quad.label    + ' '
+            + quad.operator + ' '
+            + quad.operand1 + ' '
+            + quad.operand2 + ' '
+            + quad.operand3)
+
 def parseQuad(quad):
     global currentfunctionName
     parCounter = 0
 
-    produce(f"L{quad.label}:")
-    produce(f"#\t{quad.toString}")
+    produce(f"\nL{quad.label}:")
+    produce(f"#{toString(quad)}")
     if quad.operator == "=":
         loadvr(quad.operand1, "t0")
         storerv(quad.operand1, "t0")
