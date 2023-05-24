@@ -44,7 +44,7 @@ ble t0, t1, 6
 
 L5:
 #5 jump _ _ 11
-j 11
+j L11
 
 L6:
 #6 * fact i T%0
@@ -68,7 +68,9 @@ sw t0, 0(t0)
 
 L8:
 #8 + i 1 T%1
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -16
+lw t0, 0(t0)
 li t1, 1
 add t0, t1, t0
 sw t0, -28(sp)
@@ -84,7 +86,7 @@ sw t0, 0(t0)
 
 L10:
 #10 jump _ _ 4
-j 4
+j L4
 
 L11:
 #11 out fact _ _
@@ -108,13 +110,15 @@ sw ra, 0(sp)
 
 L14:
 #14 <= x 1 16
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -12
+lw t0, 0(t0)
 li t1, 1
 ble t0, t1, 16
 
 L15:
 #15 jump _ _ 18
-j 18
+j L18
 
 L16:
 #16 ret _ _ x
@@ -126,11 +130,13 @@ sw t1, 0(t0)
 
 L17:
 #17 jump _ _ 28
-j 28
+j L28
 
 L18:
 #18 - x 1 T%2
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -12
+lw t0, 0(t0)
 li t1, 1
 sub t0, t1, t0
 sw t0, -16(sp)
@@ -151,12 +157,14 @@ L21:
 lw t0, -4(sp)
 sw t0, -4(fp)
 addi sp, sp, 36
-jal 13
+jal L13
 addi sp, sp, -36
 
 L22:
 #22 - x 2 T%4
-li t0, 2
+lw t0, -4(sp)
+addi t0, t0, -12
+lw t0, 0(t0)
 li t1, 2
 sub t0, t1, t0
 sw t0, -24(sp)
@@ -177,7 +185,7 @@ L25:
 lw t0, -4(sp)
 sw t0, -4(fp)
 addi sp, sp, 36
-jal 13
+jal L13
 addi sp, sp, -36
 
 L26:
@@ -227,7 +235,7 @@ L33:
 #33 call fibonacci _ _
 sw sp, -4(fp)
 addi sp, sp, 36
-jal 13
+jal L13
 addi sp, sp, -36
 
 L34:
@@ -267,17 +275,21 @@ sw t0, 0(t0)
 
 L39:
 #39 > x 0 41
-li t0, 0
+lw t0, -4(sp)
+addi t0, t0, -12
+lw t0, 0(t0)
 li t1, 0
 bgt t0, t1, 41
 
 L40:
 #40 jump _ _ 46
-j 46
+j L46
 
 L41:
 #41 // x 10 T%8
-li t0, 10
+lw t0, -4(sp)
+addi t0, t0, -12
+lw t0, 0(t0)
 li t1, 10
 div t0, t1, t0
 sw t0, -20(sp)
@@ -293,7 +305,9 @@ sw t0, 0(t0)
 
 L43:
 #43 + count 1 T%9
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -16
+lw t0, 0(t0)
 li t1, 1
 add t0, t1, t0
 sw t0, -24(sp)
@@ -309,7 +323,7 @@ sw t0, 0(t0)
 
 L45:
 #45 jump _ _ 39
-j 39
+j L39
 
 L46:
 #46 out count _ _
@@ -361,7 +375,7 @@ beq t0, t1, 53
 
 L52:
 #52 jump _ _ 55
-j 55
+j L55
 
 L53:
 #53 ret _ _ 1
@@ -371,7 +385,7 @@ sw t1, 0(t0)
 
 L54:
 #54 jump _ _ 56
-j 56
+j L56
 
 L55:
 #55 ret _ _ 0
@@ -409,7 +423,7 @@ blt t0, t1, 61
 
 L60:
 #60 jump _ _ 72
-j 72
+j L72
 
 L61:
 #61 par i cv _
@@ -436,18 +450,18 @@ L64:
 #64 call divides _ _
 sw sp, -4(fp)
 addi sp, sp, 28
-jal 48
+jal L48
 addi sp, sp, -28
 
 L65:
 #65 == T%12 1 67
-li t0, 1
+lw t0, -20(sp)
 li t1, 1
 beq t0, t1, 67
 
 L66:
 #66 jump _ _ 69
-j 69
+j L69
 
 L67:
 #67 ret _ _ 0
@@ -457,11 +471,13 @@ sw t1, 0(t0)
 
 L68:
 #68 jump _ _ _
-j _
+j L_
 
 L69:
 #69 + i 1 T%13
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -12
+lw t0, 0(t0)
 li t1, 1
 add t0, t1, t0
 sw t0, -24(sp)
@@ -477,7 +493,7 @@ sw t0, 0(t0)
 
 L71:
 #71 jump _ _ 59
-j 59
+j L59
 
 L72:
 #72 ret _ _ 1
@@ -505,13 +521,15 @@ sw t0, 0(t0)
 
 L76:
 #76 <= i 30 78
-li t0, 30
+lw t0, -4(sp)
+addi t0, t0, -12
+lw t0, 0(t0)
 li t1, 30
 ble t0, t1, 78
 
 L77:
 #77 jump _ _ 88
-j 88
+j L88
 
 L78:
 #78 par i cv _
@@ -530,18 +548,18 @@ L80:
 #80 call isPrime _ _
 sw sp, -4(fp)
 addi sp, sp, 28
-jal 57
+jal L57
 addi sp, sp, -28
 
 L81:
 #81 == T%14 1 83
-li t0, 1
+lw t0, -16(sp)
 li t1, 1
 beq t0, t1, 83
 
 L82:
 #82 jump _ _ 85
-j 85
+j L85
 
 L83:
 #83 out i _ _
@@ -556,11 +574,13 @@ ecall
 
 L84:
 #84 jump _ _ _
-j _
+j L_
 
 L85:
 #85 + i 1 T%15
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -12
+lw t0, 0(t0)
 li t1, 1
 add t0, t1, t0
 sw t0, -20(sp)
@@ -576,7 +596,7 @@ sw t0, 0(t0)
 
 L87:
 #87 jump _ _ 76
-j 76
+j L76
 
 L88:
 #88 end_block main_primes _ _
@@ -599,7 +619,7 @@ bgt t0, t1, 92
 
 L91:
 #91 jump _ _ 94
-j 94
+j L94
 
 L92:
 #92 ret _ _ a
@@ -611,7 +631,7 @@ sw t1, 0(t0)
 
 L93:
 #93 jump _ _ 95
-j 95
+j L95
 
 L94:
 #94 ret _ _ b
@@ -651,7 +671,7 @@ L100:
 #100 call max _ _
 sw sp, -4(fp)
 addi sp, sp, 20
-jal 89
+jal L89
 addi sp, sp, -20
 
 L101:
@@ -681,7 +701,7 @@ L105:
 #105 call max _ _
 sw sp, -4(fp)
 addi sp, sp, 20
-jal 89
+jal L89
 addi sp, sp, -20
 
 L106:
@@ -699,7 +719,7 @@ L108:
 #108 call max _ _
 sw sp, -4(fp)
 addi sp, sp, 20
-jal 89
+jal L89
 addi sp, sp, -20
 
 L109:
@@ -771,30 +791,32 @@ sw t0, -28(sp)
 
 L117:
 #117 < T%19 1 121
-li t0, 1
+lw t0, -28(sp)
 li t1, 1
 blt t0, t1, 121
 
 L118:
 #118 jump _ _ 141
-j 141
+j L141
 
 L119:
 #119 5 < ] 121
 
 L120:
 #120 jump _ _ 141
-j 141
+j L141
 
 L121:
 #121 == t 1 123
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -24
+lw t0, 0(t0)
 li t1, 1
 beq t0, t1, 123
 
 L122:
 #122 jump _ _ 125
-j 125
+j L125
 
 L123:
 #123 = c _ 2
@@ -807,17 +829,19 @@ sw t0, 0(t0)
 
 L124:
 #124 jump _ _ 130
-j 130
+j L130
 
 L125:
 #125 == t 2 127
-li t0, 2
+lw t0, -4(sp)
+addi t0, t0, -24
+lw t0, 0(t0)
 li t1, 2
 beq t0, t1, 127
 
 L126:
 #126 jump _ _ 129
-j 129
+j L129
 
 L127:
 #127 = c _ 4
@@ -830,7 +854,7 @@ sw t0, 0(t0)
 
 L128:
 #128 jump _ _ 130
-j 130
+j L130
 
 L129:
 #129 = c _ 0
@@ -843,33 +867,39 @@ sw t0, 0(t0)
 
 L130:
 #130 < a 1 132
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -16
+lw t0, 0(t0)
 li t1, 1
 blt t0, t1, 132
 
 L131:
 #131 jump _ _ 140
-j 140
+j L140
 
 L132:
 #132 == a 2 134
-li t0, 2
+lw t0, -4(sp)
+addi t0, t0, -16
+lw t0, 0(t0)
 li t1, 2
 beq t0, t1, 134
 
 L133:
 #133 jump _ _ 139
-j 139
+j L139
 
 L134:
 #134 == b 1 136
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -20
+lw t0, 0(t0)
 li t1, 1
 beq t0, t1, 136
 
 L135:
 #135 jump _ _ 138
-j 138
+j L138
 
 L136:
 #136 = c _ 2
@@ -882,19 +912,19 @@ sw t0, 0(t0)
 
 L137:
 #137 jump _ _ 134
-j 134
+j L134
 
 L138:
 #138 jump _ _ _
-j _
+j L_
 
 L139:
 #139 jump _ _ 130
-j 130
+j L130
 
 L140:
 #140 jump _ _ 116
-j 116
+j L116
 
 L141:
 #141 end_block main_ifWhile _ _
@@ -975,7 +1005,7 @@ L152:
 #152 call P11 _ _
 sw sp, -4(fp)
 addi sp, sp, 20
-jal 142
+jal L142
 addi sp, sp, -20
 
 L153:
@@ -1013,7 +1043,7 @@ L157:
 lw t0, -4(sp)
 sw t0, -4(fp)
 addi sp, sp, 36
-jal 148
+jal L148
 addi sp, sp, -36
 
 L158:
@@ -1080,24 +1110,28 @@ sw t0, 0(t0)
 
 L166:
 #166 > b 1 170
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -12
+lw t0, 0(t0)
 li t1, 1
 bgt t0, t1, 170
 
 L167:
 #167 jump _ _ 174
-j 174
+j L174
 
 L168:
 #168 2 < or 174
 
 L169:
 #169 jump _ _ 174
-j 174
+j L174
 
 L170:
 #170 + g 1 T%22
-li t0, 1
+lw t0, -4(sp)
+addi t0, t0, -16
+lw t0, 0(t0)
 li t1, 1
 add t0, t1, t0
 sw t0, -24(sp)
@@ -1121,7 +1155,7 @@ blt t0, t1, 174
 
 L173:
 #173 jump _ _ 179
-j 179
+j L179
 
 L174:
 #174 par g cv P1
@@ -1140,7 +1174,7 @@ L176:
 #176 call P1 _ _
 sw sp, -4(fp)
 addi sp, sp, 36
-jal 148
+jal L148
 addi sp, sp, -36
 
 L177:
@@ -1154,7 +1188,7 @@ sw t0, 0(t0)
 
 L178:
 #178 jump _ _ 180
-j 180
+j L180
 
 L179:
 #179 = f _ 1
@@ -1173,23 +1207,23 @@ jr ra
 Lmain:
 sw sp, -4(fp)
 addi sp, sp, 32
-jal 0
+jal L0
 addi sp, sp, -32
 sw sp, -4(fp)
 addi sp, sp, 20
-jal 29
+jal L29
 addi sp, sp, -20
 sw sp, -4(fp)
 addi sp, sp, 28
-jal 36
+jal L36
 addi sp, sp, -28
 sw sp, -4(fp)
 addi sp, sp, 24
-jal 74
+jal L74
 addi sp, sp, -24
 sw sp, -4(fp)
 addi sp, sp, 28
-jal 96
+jal L96
 addi sp, sp, -28
 li a0, 0
 li a7, 93
